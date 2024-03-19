@@ -3,6 +3,12 @@ from tkinter import messagebox
 from plyer import notification
 import threading
 import time
+import gi
+
+gi.require_version("Gst", "1.0")
+from gi.repository import Gst
+
+Gst.init(None)
 
 
 class AlarmApp:
@@ -34,7 +40,21 @@ class AlarmApp:
         self.set_button = tk.Button(root, text="Set Alarm", command=self.set_alarm)
         self.set_button.pack()
 
+    def play_mp3(file_path):
+        playbin = Gst.ElementFactory.make("playbin", "player")
+        playbin.props.uri = f"./alarm_sounds/{file_path}"
+        playbin.set_state(Gst.State.PLAYING)
+
+        # Wait until playback is finished or interrupted
+        bus = playbin.get_bus()
+        bus.timed_pop_filtered(
+            Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.EOS
+        )
+
+        playbin.set_state(Gst.State.NULL)
+
     def show_notification(self, title, message):
+        self.play_mp3("break.mp3")
         notification.notify(title=title, message=message, timeout=10)
 
     def start_alarm(self):
